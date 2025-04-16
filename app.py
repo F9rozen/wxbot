@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QLineEdit, QPushButton, QWidget, QMessageBox, QCheckBox, QScrollArea
 from chat import start_wechat_service
 from llm import GPT
 import threading
@@ -8,7 +8,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("微信智能客服")
-        self.setGeometry(300, 300, 400, 200)
+        self.setGeometry(300, 300, 400, 400)
 
         self.layout = QVBoxLayout()
 
@@ -28,6 +28,13 @@ class MainWindow(QMainWindow):
         self.app_id_input = QLineEdit()
         self.app_id_input.setText("")
         self.layout.addWidget(self.app_id_input)
+
+        self.listen_label = QLabel("输入监听对象（用逗号分隔）:")
+        self.layout.addWidget(self.listen_label)
+
+        self.listen_input = QLineEdit()
+        self.listen_input.setPlaceholderText("例如: 张三, 李四, 工作群A")
+        self.layout.addWidget(self.listen_input)
 
         self.start_button = QPushButton("启动客服")
         self.start_button.clicked.connect(self.start_service)
@@ -57,18 +64,17 @@ class MainWindow(QMainWindow):
         if not api_key or not app_id:
             QMessageBox.warning(self, "错误", "请输入 API Key 和 App ID")
             return
-        # if not api_key:
-        #     QMessageBox.warning(self, "错误", "请输入 API Key")
-        #     return
 
-        #gpt = GPT(api_key=api_key)
-        # if not gpt.validate_api_key():
-        #     QMessageBox.warning(self, "错误", "API Key 无效")
-        #     return
+        # 获取用户输入的监听对象
+        listen_input = self.listen_input.text()
+        selected_listen_list = [name.strip() for name in listen_input.split(",") if name.strip()]
+        if not selected_listen_list:
+            QMessageBox.warning(self, "错误", "请输入至少一个监听对象")
+            return
 
-        listen_list = ['Agent', '🐎']  # 监听对象列表
-        threading.Thread(target=start_wechat_service, args=(api_key, app_id, "你是一个智能助手，用于回复人们的各种问题", listen_list), daemon=True).start()
+        threading.Thread(target=start_wechat_service, args=(api_key, app_id, "你是一个智能客服，用于回复人们的各种问题", selected_listen_list), daemon=True).start()
         self.status_label.setText("客服已启动")
+        QMessageBox.information(self, "状态", "客服已启动")
 
     def check_wechat_login(self):
         try:
